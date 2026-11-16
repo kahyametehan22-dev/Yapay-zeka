@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Türkçe AI</title>
+<style>
+:root{color-scheme:dark;--bg:#212121;--panel:#171717;--panel2:#2f2f2f;--text:#ececec;--muted:#a5a5a5;--line:#3a3a3a;--accent:#10a37f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+.app{height:100dvh;display:flex;overflow:hidden}.sidebar{width:260px;background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.brand{font-weight:700;font-size:17px;padding:8px 6px}.new,.history button,.sidebottom button{background:transparent;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px;text-align:left;cursor:pointer}
+.new:hover,.history button:hover,.sidebottom button:hover{background:#292929}.history{display:flex;flex-direction:column;gap:5px;overflow:auto}.history button{border:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}.sidebottom{margin-top:auto;display:grid;gap:8px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}.top{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:12px}.top strong{font-size:15px}.model{color:var(--muted);font-size:12px}.mobilemenu{display:none;background:none;border:0;color:var(--text);font-size:21px}
+.chat{flex:1;overflow:auto;padding:28px 18px 160px}.welcome{max-width:760px;margin:14vh auto 0;text-align:center}.welcome h1{font-size:30px;font-weight:600;margin:0 0 12px}.welcome p{color:var(--muted);margin:0}
+.messages{max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:24px}.msg{display:flex;gap:13px;align-items:flex-start}.avatar{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;background:#343434;font-size:13px}.msg.user .avatar{background:#555}.bubble{min-width:0;white-space:pre-wrap;overflow-wrap:anywhere;padding-top:2px}.bubble code{background:#343434;padding:2px 5px;border-radius:5px}.bubble pre{background:#151515;border:1px solid var(--line);padding:14px;border-radius:10px;overflow:auto}
+.composer-wrap{position:absolute;bottom:0;left:0;right:0;padding:22px 18px 16px;background:linear-gradient(transparent,var(--bg) 20%)}.composer{max-width:780px;margin:auto;background:var(--panel2);border:1px solid #454545;border-radius:24px;padding:10px 12px;display:flex;align-items:flex-end;gap:10px;box-shadow:0 5px 25px #0003}
+textarea{flex:1;resize:none;max-height:180px;min-height:28px;background:transparent;border:0;outline:0;color:var(--text);font:inherit;padding:5px 2px}.send{width:36px;height:36px;border:0;border-radius:50%;background:var(--text);color:#171717;font-size:19px;cursor:pointer}.send:disabled{opacity:.35;cursor:not-allowed}.hint{text-align:center;color:var(--muted);font-size:11px;margin:9px auto 0;max-width:780px}
+.typing{color:var(--muted);font-size:13px}.hidden{display:none!important}
+@media(max-width:700px){.sidebar{position:absolute;z-index:5;inset:0 auto 0 0;transform:translateX(-100%);transition:.2s;box-shadow:8px 0 30px #0006}.sidebar.open{transform:translateX(0)}.mobilemenu{display:block}.top{padding:0 12px}.chat{padding:22px 14px 150px}.welcome{margin-top:18vh}.welcome h1{font-size:25px}.composer-wrap{padding:14px 10px}.msg{gap:9px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar" id="sidebar">
+<div class="brand">✳ Türkçe AI</div>
+<button class="new" id="newChat">＋ Yeni sohbet</button>
+<div class="history" id="history"></div>
+<div class="sidebottom"><button id="clearHistory">Sohbet geçmişini temizle</button><button id="about">Hakkında</button></div>
+</aside>
+<main class="main">
+<header class="top"><button class="mobilemenu" id="menu">☰</button><strong>Türkçe AI</strong><span class="model">Akıllı asistan</span></header>
+<section class="chat" id="chat">
+<div class="welcome" id="welcome"><h1>Bugün ne üzerinde çalışalım?</h1><p>Sorunu yaz. Birlikte düşünelim, araştıralım ve çözelim.</p></div>
+<div class="messages" id="messages"></div>
+</section>
+<div class="composer-wrap">
+<div class="composer"><textarea id="prompt" rows="1" placeholder="Türkçe AI'ya mesaj gönder..."></textarea><button class="send" id="send" aria-label="Gönder">↑</button></div>
+<div class="hint">Türkçe AI hata yapabilir. Önemli bilgileri kontrol et.</div>
+</div>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let conversations=[], current=null, busy=false;
+function fresh(){current={id:Date.now(),title:"Yeni sohbet",messages:[]};conversations.unshift(current);renderHistory();render()}
+function renderHistory(){$("history").innerHTML="";conversations.forEach(c=>{let b=document.createElement("button");b.textContent=c.title;b.onclick=()=>{current=c;render();$("sidebar").classList.remove("open")};$("history").append(b)})}
+function addMessage(role,content){current.messages.push({role,content});if(current.messages.length===1)current.title=content.slice(0,34)+(content.length>34?"…":"");renderHistory();render()}
+function render(){$("messages").innerHTML="";$("welcome").classList.toggle("hidden",!!(current&&current.messages.length));if(!current)return;
+current.messages.forEach(m=>{let row=document.createElement("div");row.className="msg "+(m.role==="user"?"user":"assistant");let av=document.createElement("div");av.className="avatar";av.textContent=m.role==="user"?"S":"✳";let body=document.createElement("div");body.className="bubble";body.textContent=m.content;row.append(av,body);$("messages").append(row)});$("chat").scrollTop=$("chat").scrollHeight}
+async function send(){let text=$("prompt").value.trim();if(!text||busy)return;if(!current)fresh();$("prompt").value="";resize();addMessage("user",text);busy=true;$("send").disabled=true;
+let row=document.createElement("div");row.className="msg";row.id="typing";row.innerHTML='<div class="avatar">✳</div><div class="bubble typing">Düşünüyor…</div>';$("messages").append(row);$("chat").scrollTop=$("chat").scrollHeight;
+try{let r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:current.messages})});let data=await r.json();if(!r.ok)throw new Error(data.error||"Sunucu hatası");$("typing")?.remove();addMessage("assistant",data.reply||"Yanıt alınamadı.");}
+catch(e){$("typing")?.remove();addMessage("assistant","Bağlantı hatası: "+e.message+"\n\nSunucunun çalıştığını ve API anahtarının ayarlandığını kontrol et.");}
+finally{busy=false;$("send").disabled=false;$("prompt").focus()}}
+function resize(){$("prompt").style.height="auto";$("prompt").style.height=Math.min($("prompt").scrollHeight,180)+"px"}
+$("send").onclick=send;$("prompt").addEventListener("input",resize);$("prompt").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send()}});
+$("newChat").onclick=()=>{fresh();$("sidebar").classList.remove("open")};$("menu").onclick=()=>$("sidebar").classList.toggle("open");
+$("clearHistory").onclick=()=>{if(confirm("Tüm sohbet geçmişi silinsin mi?")){conversations=[];current=null;renderHistory();render()}};
+$("about").onclick=()=>alert("Türkçe AI, güçlü bir dil modeli API'sine bağlanan örnek sohbet arayüzüdür. Yanıt kalitesi bağlı olduğun modele bağlıdır.");
+fresh();
+</script>
+</body>
+</html>
